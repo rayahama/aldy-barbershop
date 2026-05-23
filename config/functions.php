@@ -78,6 +78,11 @@ function checkRole($allowedRoles) {
     checkLogin();
     if (!in_array($_SESSION['user']['role'], (array)$allowedRoles)) {
         setFlash('error', 'Anda tidak memiliki akses ke halaman tersebut.');
+        $role = $_SESSION['user']['role'];
+        if ($role === 'customer') redirect('customer-dashboard.php');
+        if ($role === 'staff') redirect('staff-dashboard.php');
+        if ($role === 'admin') redirect('admin-dashboard.php');
+        if ($role === 'owner') redirect('owner-dashboard.php');
         redirect('login.php');
     }
 }
@@ -114,4 +119,32 @@ function validateTimeSlot($time) {
     if ($hour < 9 || $hour >= 20) return false;
     if ($min % 30 !== 0) return false;
     return true;
+}
+
+// ============================================
+// FUNGSI UNTUK HARGA BERDASARKAN UMUR
+// ============================================
+
+// Hitung umur dari tanggal lahir
+function hitungUmur($birthDate) {
+    $today = new DateTime();
+    $birth = new DateTime($birthDate);
+    $diff  = $today->diff($birth);
+    return $diff->y;
+}
+
+// Tentukan harga berdasarkan umur dan layanan
+function hitungHarga($serviceName, $umur) {
+    if ($umur < 15) {
+        return 10000; // Rp10.000 untuk anak-anak (< 15 tahun)
+    }
+    return 15000; // Rp15.000 untuk dewasa (>= 15 tahun)
+}
+
+// Label harga berdasarkan umur
+function labelHarga($umur) {
+    if ($umur < 15) {
+        return '<span class="badge bg-info">Anak-anak</span>';
+    }
+    return '<span class="badge bg-accent">Dewasa</span>';
 }

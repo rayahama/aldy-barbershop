@@ -417,6 +417,34 @@ table.dataTable thead .sorting_desc::after {
     box-shadow: 0 8px 25px rgba(0,0,0,0.4);
 }
 
+/* ============================================
+   FORCE TEKS PUTIH TERANG (Override Semua)
+   ============================================ */
+.modal-body,
+.modal-body p,
+.modal-body small,
+.modal-body div,
+.modal-body label,
+.modal-body span,
+.section-card p,
+.section-card small,
+.section-card div,
+.section-card label,
+.section-card span,
+.stat-label,
+.form-label,
+.form-text,
+.text-muted,
+p,
+small {
+    color: #e0e0e0 !important;
+}
+
+/* Kecuali teks yang memang sengaja berwarna accent/warning */
+.text-accent, .text-warning, .text-danger, .text-success, .text-info {
+    color: inherit !important;
+}
+
 /* === Print Styles === */
 @media print {
     body { background: #fff !important; color: #000 !important; }

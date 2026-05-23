@@ -111,6 +111,20 @@ $recentBookings = $recentResult ? $recentResult->fetch_all(MYSQLI_ASSOC) : [];
             color: var(--accent);
             background: transparent;
         }
+
+         /* === PERBAIKAN WARNA PARAGRAF TERANG === */
+        .hero-subtitle {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+        .text-muted {
+            color: rgba(255, 255, 255, 0.7) !important;
+        }
+        .section-title.text-light {
+            color: #ffffff !important;
+        }
+        .hours-item span.fw-medium {
+            color: rgba(255, 255, 255, 0.85) !important;
+}
         .stat-inline {
             display: flex;
             gap: 2rem;

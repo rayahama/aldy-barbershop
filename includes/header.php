@@ -19,7 +19,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=2">
 </head>
 <body>
 

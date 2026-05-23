@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('admin-dashboard.php');
     }
 
-    // Catat pembayaran (CASH ONLY + HARGA TERKUNCI SESUAI UMUR)
+    // Catat pembayaran (CASH ONLY + HARGA TERKUNCI)
     if ($action === 'pay') {
         $bookingId = (int)($_POST['booking_id'] ?? 0);
         $metode    = 'cash';
@@ -108,33 +108,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('admin-dashboard.php');
     }
 
-    // Tambah layanan
+    // Tambah layanan (TERMASUK KETERANGAN)
     if ($action === 'add_service') {
-        $name  = trim($_POST['service_name'] ?? '');
-        $price = (int)($_POST['service_price'] ?? 0);
+        $name       = trim($_POST['service_name'] ?? '');
+        $price      = (int)($_POST['service_price'] ?? 0);
+        $keterangan = trim($_POST['keterangan'] ?? '');
         if (empty($name) || $price <= 0) {
             setFlash('error', 'Nama layanan dan harga wajib diisi.');
             redirect('admin-dashboard.php');
         }
-        $stmt = $conn->prepare("INSERT INTO services (service_name, service_price) VALUES (?, ?)");
-        $stmt->bind_param("si", $name, $price);
+        $stmt = $conn->prepare("INSERT INTO services (service_name, service_price, keterangan) VALUES (?, ?, ?)");
+        $stmt->bind_param("sis", $name, $price, $keterangan);
         $stmt->execute();
         $stmt->close();
         setFlash('success', 'Layanan berhasil ditambahkan.');
         redirect('admin-dashboard.php');
     }
 
-    // Edit layanan
+    // Edit layanan (TERMASUK KETERANGAN)
     if ($action === 'edit_service') {
-        $id    = (int)($_POST['service_id'] ?? 0);
-        $name  = trim($_POST['service_name'] ?? '');
-        $price = (int)($_POST['service_price'] ?? 0);
+        $id         = (int)($_POST['service_id'] ?? 0);
+        $name       = trim($_POST['service_name'] ?? '');
+        $price      = (int)($_POST['service_price'] ?? 0);
+        $keterangan = trim($_POST['keterangan'] ?? '');
         if (empty($name) || $price <= 0) {
             setFlash('error', 'Nama layanan dan harga wajib diisi.');
             redirect('admin-dashboard.php');
         }
-        $stmt = $conn->prepare("UPDATE services SET service_name = ?, service_price = ? WHERE id_services = ?");
-        $stmt->bind_param("sii", $name, $price, $id);
+        $stmt = $conn->prepare("UPDATE services SET service_name = ?, service_price = ?, keterangan = ? WHERE id_services = ?");
+        $stmt->bind_param("sisi", $name, $price, $keterangan, $id);
         $stmt->execute();
         $stmt->close();
         setFlash('success', 'Layanan berhasil diperbarui.');
@@ -167,7 +169,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // AMBIL DATA UNTUK TAMPILAN
 // ============================================
 
-// Semua booking
  $allBookings = $conn->query("
     SELECT b.*, c.name AS customer_name, c.phone AS customer_phone, c.birth_date, u.name AS admin_name,
            p.id_payments, p.status AS payment_status, p.metode_pembayaran
@@ -178,7 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ORDER BY b.created_at DESC
 ");
 
-// Semua pembayaran
  $allPayments = $conn->query("
     SELECT p.*, b.service_name, b.booking_date, b.booking_time, c.name AS customer_name
     FROM payments p
@@ -187,11 +187,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ORDER BY p.created_at DESC
 ");
 
-// Semua layanan
  $allServices = $conn->query("SELECT * FROM services ORDER BY service_price ASC");
 
-// Statistik
- $stats = ['menunggu' => 0, 'dikonfirmasi' => 0, 'selesai' => 0, 'ditolak' => 0, 'dibatalkan' => 0, 'total' => 0]; $bookingsData = [];
+ $stats = ['menunggu' => 0, 'dikonfirmasi' => 0, 'selesai' => 0, 'ditolak' => 0, 'dibatalkan' => 0, 'total' => 0];
+ $bookingsData = [];
 while ($b = $allBookings->fetch_assoc()) {
     $bookingsData[] = $b;
     $stats['total']++;
@@ -223,32 +222,37 @@ require_once '../includes/header.php';
         </div>
     </div>
 
-    <!-- Statistik Ringkas -->
+    <!-- Statistik -->
     <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-lg">
             <div class="stat-card">
                 <div class="stat-icon bg-warning bg-opacity-25 text-warning"><i class="bi bi-hourglass"></i></div>
                 <div class="stat-value"><?= $stats['menunggu'] ?></div>
                 <div class="stat-label">Menunggu</div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-lg">
             <div class="stat-card">
                 <div class="stat-icon bg-info bg-opacity-25 text-info"><i class="bi bi-check-circle"></i></div>
                 <div class="stat-value"><?= $stats['dikonfirmasi'] ?></div>
                 <div class="stat-label">Dikonfirmasi</div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="col-6 col-lg-3">
+        <div class="col-6 col-lg">
             <div class="stat-card">
-               <div class="stat-icon bg-success bg-opacity-25 text-success"><i class="bi bi-check2-all"></i></div>
-               <div class="stat-value"><?= $stats['selesai'] ?></div>
-               <div class="stat-label">Selesai</div>
+                <div class="stat-icon bg-success bg-opacity-25 text-success"><i class="bi bi-check2-all"></i></div>
+                <div class="stat-value"><?= $stats['selesai'] ?></div>
+                <div class="stat-label">Selesai</div>
             </div>
         </div>
+        <div class="col-6 col-lg">
+            <div class="stat-card">
+                <div class="stat-icon bg-danger bg-opacity-25 text-danger"><i class="bi bi-x-circle"></i></div>
+                <div class="stat-value"><?= $stats['ditolak'] ?></div>
+                <div class="stat-label">Ditolak</div>
+            </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-6 col-lg">
             <div class="stat-card">
                 <div class="stat-icon bg-secondary bg-opacity-25 text-secondary"><i class="bi bi-dash-circle"></i></div>
                 <div class="stat-value"><?= $stats['dibatalkan'] ?></div>
@@ -348,17 +352,13 @@ require_once '../includes/header.php';
                                             <?= csrfField() ?>
                                             <input type="hidden" name="action" value="confirm">
                                             <input type="hidden" name="booking_id" value="<?= $b['id_bookings'] ?>">
-                                            <button type="submit" class="btn btn-outline-success" title="Konfirmasi">
-                                                <i class="bi bi-check-lg"></i>
-                                            </button>
+                                            <button type="submit" class="btn btn-outline-success" title="Konfirmasi"><i class="bi bi-check-lg"></i></button>
                                         </form>
                                         <form method="POST" action="" class="d-inline" onsubmit="return confirm('Yakin menolak booking ini?')">
                                             <?= csrfField() ?>
                                             <input type="hidden" name="action" value="reject">
                                             <input type="hidden" name="booking_id" value="<?= $b['id_bookings'] ?>">
-                                            <button type="submit" class="btn btn-outline-danger" title="Tolak">
-                                                <i class="bi bi-x-lg"></i>
-                                            </button>
+                                            <button type="submit" class="btn btn-outline-danger" title="Tolak"><i class="bi bi-x-lg"></i></button>
                                         </form>
                                     </div>
                                     <?php elseif ($b['status'] === 'dikonfirmasi' && !$b['id_payments']): ?>
@@ -462,9 +462,7 @@ require_once '../includes/header.php';
                                 <td class="fw-medium"><?= e($s['service_name']) ?></td>
                                 <td class="text-accent fw-semibold"><?= formatRupiah($s['service_price']) ?></td>
                                 <td>
-                                    <span class="badge bg-info me-1">Anak</span><?= formatRupiah(10000) ?>
-                                    <span class="mx-1 text-muted">|</span>
-                                    <span class="badge bg-accent me-1">Dewasa</span><?= formatRupiah(15000) ?>
+                                    <small class="text-muted"><?= e($s['keterangan'] ?? '-') ?></small>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
@@ -473,6 +471,7 @@ require_once '../includes/header.php';
                                                 data-id="<?= $s['id_services'] ?>"
                                                 data-name="<?= e($s['service_name']) ?>"
                                                 data-price="<?= $s['service_price'] ?>"
+                                                data-keterangan="<?= e($s['keterangan'] ?? '') ?>"
                                                 title="Edit">
                                             <i class="bi bi-pencil"></i>
                                         </button>
@@ -480,9 +479,7 @@ require_once '../includes/header.php';
                                             <?= csrfField() ?>
                                             <input type="hidden" name="action" value="delete_service">
                                             <input type="hidden" name="service_id" value="<?= $s['id_services'] ?>">
-                                            <button type="submit" class="btn btn-outline-danger" title="Hapus">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
+                                            <button type="submit" class="btn btn-outline-danger" title="Hapus"><i class="bi bi-trash"></i></button>
                                         </form>
                                     </div>
                                 </td>
@@ -494,7 +491,7 @@ require_once '../includes/header.php';
             </div>
         </div>
 
-    </div><!-- end tab-content -->
+    </div>
 </div>
 
 <!-- ==================== MODAL: CATAT PEMBAYARAN ==================== -->
@@ -531,11 +528,10 @@ require_once '../includes/header.php';
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="payTotal" class="form-label small fw-medium">Total Bayar</label>
+                        <label class="form-label small fw-medium">Total Bayar</label>
                         <div class="input-group">
                             <span class="input-group-text bg-dark-subtle border-secondary text-accent fw-bold">Rp</span>
-                            <input type="text" class="form-control bg-dark-subtle border-secondary text-light fw-bold fs-5" id="payTotal" readonly
-                                   style="cursor:not-allowed;background:rgba(201,169,110,0.08);">
+                            <input type="text" class="form-control bg-dark-subtle border-secondary text-light fw-bold fs-5" id="payTotal" readonly style="cursor:not-allowed;background:rgba(201,169,110,0.08);">
                             <input type="hidden" id="payTotalHidden" name="total">
                         </div>
                         <small class="text-muted"><i class="bi bi-lock me-1"></i>Harga otomatis sesuai umur, tidak bisa diubah</small>
@@ -574,10 +570,14 @@ require_once '../includes/header.php';
                         <label for="svcName" class="form-label small fw-medium">Nama Layanan</label>
                         <input type="text" class="form-control bg-dark-subtle border-secondary text-light" id="svcName" name="service_name" required>
                     </div>
-                    <div class="mb-0">
+                    <div class="mb-3">
                         <label for="svcPrice" class="form-label small fw-medium">Harga Dasar (Rp)</label>
                         <input type="number" class="form-control bg-dark-subtle border-secondary text-light" id="svcPrice" name="service_price" required min="0">
-                        <small class="text-muted">Harga aktual akan disesuaikan otomatis: Anak Rp10.000, Dewasa Rp15.000</small>
+                        <small class="text-muted">Harga aktual: Anak Rp10.000, Dewasa Rp15.000</small>
+                    </div>
+                    <div class="mb-0">
+                        <label for="svcKeterangan" class="form-label small fw-medium">Keterangan</label>
+                        <input type="text" class="form-control bg-dark-subtle border-secondary text-light" id="svcKeterangan" name="keterangan" placeholder="Contoh: Anak Rp10.000 | Dewasa Rp15.000">
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">
@@ -589,24 +589,18 @@ require_once '../includes/header.php';
     </div>
 </div>
 
-<!-- ==================== JAVASCRIPT KHUSUS ADMIN ==================== -->
 <script>
-// Payment Modal: isi data termasuk umur & harga terkunci
+// Payment Modal
 const paymentModal = document.getElementById('paymentModal');
 if (paymentModal) {
     paymentModal.addEventListener('show.bs.modal', function(event) {
         const button = event.relatedTarget;
         if (!button) return;
-
         document.getElementById('payBookingId').value = button.dataset.bookingId;
         document.getElementById('payCustomer').textContent = button.dataset.customer;
         document.getElementById('payService').textContent = button.dataset.service;
-
-        // Umur
         const age = button.dataset.age;
         document.getElementById('payAge').textContent = age + ' tahun';
-
-        // Badge kategori
         const katBadge = document.getElementById('payKategori');
         katBadge.textContent = button.dataset.kategori;
         if (button.dataset.katbadge === 'info') {
@@ -614,8 +608,6 @@ if (paymentModal) {
         } else {
             katBadge.className = 'badge bg-accent fs-6 px-3 py-2';
         }
-
-        // Harga terkunci
         const price = parseInt(button.dataset.price);
         const formatted = new Intl.NumberFormat('id-ID').format(price);
         document.getElementById('payTotal').value = formatted;
@@ -623,7 +615,7 @@ if (paymentModal) {
     });
 }
 
-// Service Modal: mode tambah / edit
+// Service Modal
 const serviceModal = document.getElementById('serviceModal');
 if (serviceModal) {
     serviceModal.addEventListener('show.bs.modal', function(event) {
@@ -634,6 +626,7 @@ if (serviceModal) {
         const editId = document.getElementById('serviceEditId');
         const nameInput = document.getElementById('svcName');
         const priceInput = document.getElementById('svcPrice');
+        const ketInput = document.getElementById('svcKeterangan');
 
         if (mode === 'edit') {
             title.innerHTML = '<i class="bi bi-pencil me-2 text-accent"></i>Edit Layanan';
@@ -641,12 +634,14 @@ if (serviceModal) {
             editId.value = button.dataset.id;
             nameInput.value = button.dataset.name;
             priceInput.value = button.dataset.price;
+            ketInput.value = button.dataset.keterangan || '';
         } else {
             title.innerHTML = '<i class="bi bi-scissors me-2 text-accent"></i>Tambah Layanan';
             action.value = 'add_service';
             editId.value = '0';
             nameInput.value = '';
             priceInput.value = '';
+            ketInput.value = '';
         }
     });
 }

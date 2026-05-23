@@ -1,11 +1,12 @@
 <?php
- $host = 'localhost';
- $user = 'root';
- $pass = '';
- $dbname = 'aldy_barbershop';
+$host = 'localhost';
+$user = 'root';
+$pass = '';
+$dbname = 'aldy_barbershop';
+$port = 3307;
 
-
- $conn = new mysqli($host, $user, $pass, $dbname,);
+// 1. Koneksi database (Koma berlebih di ujung sudah dihapus agar tidak error)
+$conn = new mysqli($host, $user, $pass, $dbname, $port);
 
 if ($conn->connect_error) {
     die("Koneksi database gagal: " . $conn->connect_error);
@@ -15,30 +16,23 @@ if ($conn->connect_error) {
 session_start();
 
 // ============================================
-// Session Timeout 30 menit 
+// 2. SESSION TIMEOUT 30 MENIT
 // ============================================
-if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
-    
-    // Hapus semua data session
-    session_unset();
-    session_destroy();
-    
-    // Cek role terakhir sebelum timeout untuk redirect ke halaman yang benar
-    function checkRole($allowedRoles) {
-    checkLogin();
-    if (!in_array($_SESSION['user']['role'], (array)$allowedRoles)) {
-        setFlash('error', 'Anda tidak memiliki akses ke halaman tersebut.');
-        // Redirect sesuai role masing-masing
-        $role = $_SESSION['user']['role'];
-        if ($role === 'customer') redirect('customer-dashboard.php');
-        if ($role === 'staff') redirect('staff-dashboard.php');
-        if ($role === 'admin') redirect('admin-dashboard.php');
-        redirect('login.php');
+if (isset($_SESSION['last_activity'])) {
+    // Jika waktu diam user lebih dari 1800 detik (30 menit)
+    if ((time() - $_SESSION['last_activity']) > 1800) {
+        session_unset();
+        session_destroy();
+        
+        // Lempar langsung ke halaman login dengan pesan timeout
+        header("Location: login.php?timeout=1");
+        exit();
     }
 }
-}
 
-// Update waktu aktivitas terakhir jika user sedang login
-if (isset($_SESSION['customer_id']) || isset($_SESSION['admin_id'])) {
+// 3. Update waktu aktivitas terakhir jika user sudah login
+if (isset($_SESSION['user'])) {
     $_SESSION['last_activity'] = time();
 }
+
+
